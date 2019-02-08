@@ -190,3 +190,9 @@ int applicationDidFinishLaunching;
 	return orig == 30 ? 10 : orig;
 }
 %end
+
+%hook _UIStatusBarVisualProvider_iOS
++ (Class)class {
+    return NSClassFromString(@"_UIStatusBarVisualProvider_Split58");
+}
+%end
