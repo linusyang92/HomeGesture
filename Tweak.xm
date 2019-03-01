@@ -38,34 +38,55 @@ int applicationDidFinishLaunching;
 }
 %end
 
-// Remove carrier text
-%hook UIStatusBarServiceItemView
-- (id)_serviceContentsImage {
-    return nil;
-}
-- (CGFloat)extraRightPadding {
-    return 0.0f;
-}
-- (CGFloat)standardPadding {
-    return 2.0f;
-}
-%end
 
-// Workaround for status bar transition bug
-%hook CCUIOverlayStatusBarPresentationProvider
-- (void)_addHeaderContentTransformAnimationToBatch:(id)arg1 transitionState:(id)arg2 {
-	return;
+#define SCREEN_WIDTH ([[UIScreen mainScreen] bounds].size.width)
+%hook CCUIHeaderPocketView
+// Hide Control Center Top Nav Bar (Pocket)
+-(void)layoutSubviews{
+  %orig;
+  if ([self valueForKey:@"_headerBackgroundView"]) {
+    UIView *backgroundView = (UIView *)[self valueForKey:@"_headerBackgroundView"];
+    backgroundView.hidden = YES;
+  }
+  if ([self valueForKey:@"_headerLineView"]) {
+    UIView *lineView = (UIView *)[self valueForKey:@"_headerLineView"];
+    lineView.hidden = YES;
+  }
 }
-- (struct CGRect)headerViewFrame {
-	struct CGRect orig = %orig;
-	orig.size.height = 45;
-	return (CGRect){orig.origin, orig.size};
-}
-- (struct CGRect)_presentedViewFrame {
-	struct CGRect orig = %orig;
-	orig.origin.y = 45;
-	return (CGRect){orig.origin, orig.size};
-}
+// Add gap to Control Center
+-(CGRect)contentBounds{
+      if (UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)){
+        return CGRectMake (0,0,SCREEN_WIDTH,30);
+      }
+      else{
+        return CGRectMake (0,0,SCREEN_WIDTH,65);
+      }
+  }
+  //Make Frame Match our Inset
+  -(CGRect)frame {
+      return CGRectMake (0,0,SCREEN_WIDTH,55);
+  }
+  //Hide Header Blur
+  -(void)setBackgroundAlpha:(double)arg1{
+      arg1 = 0.0;
+      %orig;
+  }
+  //Nedded to Make Buttons Work
+  -(BOOL)isUserInteractionEnabled {
+      return NO;
+  }
+%end
+%hook CCUIScrollView
+-(void)setContentInset:(UIEdgeInsets)arg1 {
+    if (UIDeviceOrientationIsLandscape([UIDevice currentDevice].orientation)){
+       arg1 = UIEdgeInsetsMake(25,0,0,0);
+       %orig;
+    }
+    else if (UIDeviceOrientationIsPortrait([UIDevice currentDevice].orientation)) {
+     arg1 = UIEdgeInsetsMake(55,0,0,0);
+     %orig;
+    }
+  }
 %end
 // Prevent status bar from flashing when invoking control center
 %hook CCUIModularControlCenterOverlayViewController
@@ -77,6 +98,18 @@ int applicationDidFinishLaunching;
 %hook CCUIStatusBarStyleSnapshot
 - (bool)isHidden {
 	return YES;
+}
+%end
+
+//Round Screenshot Preview
+%hook UITraitCollection
++ (id)traitCollectionWithDisplayCornerRadius:(CGFloat)arg1 {
+	return %orig(19);
+}
+
+//Round App Switcher (Bug: Enables Rounded Dock)
+- (CGFloat)displayCornerRadius {
+	return 0;
 }
 %end
 
@@ -144,27 +177,6 @@ int applicationDidFinishLaunching;
 }
 %end
 
-// Hide notification hints
-%hook NCNotificationListSectionRevealHintView
-- (void)_updateHintTitle {
-	return;
-}
-%end
-
-// Hide unlock hints
-%hook SBDashBoardTeachableMomentsContainerViewController
-- (void)_updateTextLabel {
-	return;
-}
-%end
-
-// Disable breadcrumb
-%hook SBWorkspaceDefaults
-- (bool)isBreadcrumbDisabled {
-	return YES;
-}
-%end
-
 // Workaround for crash when launching app and invoking control center simultaneously
 %hook SBSceneHandle
 - (id)scene {
@@ -182,6 +194,12 @@ int applicationDidFinishLaunching;
 - (long long)effectiveKillAffordanceStyle {
 	return 2;
 }
+- (NSInteger)killAffordanceStyle {
+	return 2;
+}
+- (void)setKillAffordanceStyle:(NSInteger)style {
+	%orig(2);
+}
 %end
 // Enable simutaneous scrolling and dismissing
 %hook SBFluidSwitcherViewController
@@ -190,7 +208,11 @@ int applicationDidFinishLaunching;
 	return orig == 30 ? 10 : orig;
 }
 %end
-
+// Hide Control Center Indicator on Coversheet
+%hook SBDashBoardTeachableMomentsContainerView
+-(void)_addControlCenterGrabber {}
+%end
+// Fix iOS 12 crashing
 %hook _UIStatusBarVisualProvider_iOS
 + (Class)class {
     return NSClassFromString(@"_UIStatusBarVisualProvider_Split58");

@@ -1,7 +1,7 @@
-Package: com.VitaTaf.HomeGesture
+Package: com.linusyang.homegesture
 Name: HomeGesture
 Depends: mobilesubstrate
-Version: 1.5
+Version: 1.0
 Architecture: iphoneos-arm
 Description: Enable iPhone X home gesture on other devices.
 Maintainer: VitaTaf
