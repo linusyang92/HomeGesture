@@ -16,6 +16,13 @@ int applicationDidFinishLaunching;
 }
 %end
 
+// Enable reachability
+%hook SBReachabilitySettings
+-(BOOL)allowOnAllDevices {
+    return YES;
+}
+%end
+
 // Hide home bar
 %hook MTLumaDodgePillView
 - (id)initWithFrame:(struct CGRect)arg1 {
